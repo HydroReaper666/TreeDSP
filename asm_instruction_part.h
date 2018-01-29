@@ -88,6 +88,15 @@ const std::vector<std::string> set_Abe { "b0e", "b1e", "a0e", "a1e" };
 const std::vector<std::string> set_Px { "p0", "p1" };
 const std::vector<std::string> set_Ablh { "b0l", "b0h", "b1l", "b1h", "a0l", "a0h", "a1l", "a1h" };
 const std::vector<std::string> set_Cond { "true", "eq", "neq", "gt", "ge", "lt", "le", "nn", "c", "v", "e", "l", "nr", "niu0", "iu0", "iu1" };
+const std::vector<std::string> set_Register { "r0", "r1", "r2", "r3", "r4", "r5", "r7", "y0", "st0", "st1", "st2", "p0h", "pc", "sp", "cfgi", "cfgj", "b0h", "b1h", "b0l", "b1l", "ext0", "ext1", "ext2", "ext3", "a0", "a1", "a0l", "a1l", "a0h", "a1h", "lc", "sv" };
+const std::vector<std::string> set_RegisterP0 { "r0", "r1", "r2", "r3", "r4", "r5", "r7", "y0", "st0", "st1", "st2", "p0", "pc", "sp", "cfgi", "cfgj", "b0h", "b1h", "b0l", "b1l", "ext0", "ext1", "ext2", "ext3", "a0", "a1", "a0l", "a1l", "a0h", "a1h", "lc", "sv" };
+const std::vector<std::string> set_R0123457y0 { "r0", "r1", "r2", "r3", "r4", "r5", "r7", "y0" };
+const std::vector<std::string> set_R01 { "r0", "r1" };
+const std::vector<std::string> set_R04 { "r0", "r4" };
+const std::vector<std::string> set_R45 { "r4", "r5" };
+const std::vector<std::string> set_R0123 { "r0", "r1", "r2", "r3" };
+const std::vector<std::string> set_R0425 { "r0", "r4", "r2", "r5" };
+const std::vector<std::string> set_R4567 { "r4", "r5", "r6", "r7" };
 
 // not
 class Not : public AsmInstructionPart {

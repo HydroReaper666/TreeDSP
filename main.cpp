@@ -103,6 +103,24 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Ablh, parse_at_bit_pos()));
             } else if (token.payload == "Cond") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Cond, parse_at_bit_pos()));
+            } else if (token.payload == "Register") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Register, parse_at_bit_pos()));
+            } else if (token.payload == "RegisterP0") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_RegisterP0, parse_at_bit_pos()));
+            } else if (token.payload == "R0123457y0") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R0123457y0, parse_at_bit_pos()));
+            } else if (token.payload == "R01") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R01, parse_at_bit_pos()));
+            } else if (token.payload == "R04") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R04, parse_at_bit_pos()));
+            } else if (token.payload == "R45") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R45, parse_at_bit_pos()));
+            } else if (token.payload == "R0123") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R0123, parse_at_bit_pos()));
+            } else if (token.payload == "R0425") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R0425, parse_at_bit_pos()));
+            } else if (token.payload == "R4567") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R4567, parse_at_bit_pos()));
             } else {
                 part_list.emplace_back(std::make_shared<SingleIdentifierPart>(token.payload));
             }
