@@ -48,14 +48,44 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.back()->CombineWith(next);
             };
 
+            const auto token_payload_starts_with = [&](const std::string& s) -> bool {
+                return token.payload.compare(0, s.length(), s) == 0;
+            };
+
+            const auto delete_comma_if_any = [&]() -> bool {
+                if (lexer.PeekToken().payload == ",") {
+                    lexer.NextToken();
+                    return true;
+                }
+                if (dynamic_cast<TokenTypePart<AsmToken::Comma>*>(part_list.back().get()) != nullptr) {
+                    part_list.pop_back();
+                    return true;
+                }
+                return false;
+            };
+
             if (token.payload == "Implied") {
                 // Ignore
+                continue;
             } else if (token.payload == "NoReverse") {
                 assert(lexer.NextToken().payload == ",");
+                continue;
+            } else if (token_payload_starts_with("Unused")) {
+                parse_at_bit_pos(); // Ignore
+                delete_comma_if_any();
+                continue;
+            } else if (token.payload == "Bogus") {
+                while (lexer.PeekToken().payload != "||" && lexer.PeekToken().payload != "," && lexer.PeekToken().type != InstructionTableToken::END_OF_LINE) {
+                    lexer.NextToken();
+                }
+                delete_comma_if_any();
+                continue;
             } else if (token.payload == "||") {
                 part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::DoublePipe>>());
             } else if (token.payload == "_") {
                 part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::Colon>>());
+            } else if (token.payload == ",") {
+                part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::Comma>>());
             } else if (token.payload == "MemSp") {
                 part_list.emplace_back(std::make_shared<MemSp>());
             } else if (token.payload == "MemR0") {

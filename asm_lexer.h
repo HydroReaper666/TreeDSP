@@ -21,6 +21,7 @@ struct OpenBracket {};
 struct CloseBracket {};
 struct DoublePipe {};
 struct Colon {};
+struct Comma {};
 
 struct Numeric { 
     SizeMarker size_marker = SizeMarker::None; 
@@ -44,6 +45,7 @@ using AsmToken = std::variant<
     CloseBracket,
     DoublePipe,
     Colon,
+    Comma,
     Numeric,
     Identifier,
     Label,

@@ -122,7 +122,7 @@ Token AsmLexer::NextToken() {
     }
     if (s.peek() == ',') {
         s.get();
-        return AsmToken::Identifier{","};
+        return AsmToken::Comma{};
     }
     if (s.peek() == '|') {
         s.get();
