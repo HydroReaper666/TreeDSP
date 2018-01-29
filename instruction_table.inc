@@ -49,8 +49,6 @@ D4D9h and  MemR7Imm16@16, Ax@8
 82A0h and  RegisterP0@0, Ax@8
 6770h and  Ab@2, Ab@0, Ax@12                ;TL2 only
 D389h and  r6, Ax@4
-)";
-const std::string to_do_list = R"(
 4B80h banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 8CDFh bankr       ;without operand ?
 8CDCh bankr Ar@0

@@ -35,10 +35,16 @@ std::vector<InstructionParser> BuildParserTable() {
 
             bool invert = false;
 
+            const auto str_starts_with = [&](const std::string& haystack, const std::string& needle) -> bool {
+                return haystack.compare(0, needle.length(), needle) == 0;
+            };
+
             const auto parse_at_bit_pos = [&]() -> size_t {
                 assert(lexer.NextToken().type == InstructionTableToken::AT);
-                if (lexer.PeekToken().payload == "not")
+                if (str_starts_with(lexer.PeekToken().payload, "not")) {
                     invert = true;
+                    return std::strtol(lexer.NextToken().payload.c_str() + 3, nullptr, 10);
+                }
                 assert(lexer.PeekToken().type == InstructionTableToken::NUMBER);
                 return std::strtol(lexer.NextToken().payload.c_str(), nullptr, 10);
             };
@@ -46,10 +52,6 @@ std::vector<InstructionParser> BuildParserTable() {
             const auto combine_with_previous = [&](std::shared_ptr<AsmInstructionPart> next) {
                 assert(!invert); // invert doesn't make sense in this context
                 part_list.back()->CombineWith(next);
-            };
-
-            const auto token_payload_starts_with = [&](const std::string& s) -> bool {
-                return token.payload.compare(0, s.length(), s) == 0;
             };
 
             const auto delete_comma_if_any = [&]() -> bool {
@@ -70,7 +72,7 @@ std::vector<InstructionParser> BuildParserTable() {
             } else if (token.payload == "NoReverse") {
                 assert(lexer.NextToken().payload == ",");
                 continue;
-            } else if (token_payload_starts_with("Unused")) {
+            } else if (str_starts_with(token.payload, "Unused")) {
                 parse_at_bit_pos(); // Ignore
                 delete_comma_if_any();
                 continue;
@@ -106,6 +108,8 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<MemRn>(parse_at_bit_pos()));
             } else if (token.payload == "ProgMemRn") {
                 part_list.emplace_back(std::make_shared<ProgMemRn>(parse_at_bit_pos()));
+            } else if (token.payload == "ProgMemR45") {
+                part_list.emplace_back(std::make_shared<ProgMemR45>(parse_at_bit_pos()));
             } else if (token.payload == "ProgMemAxl") {
                 part_list.emplace_back(std::make_shared<ProgMemAxl>(parse_at_bit_pos()));
             } else if (token.payload == "ProgMemAx") {
@@ -118,28 +122,70 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<MemR7Imm7s>(parse_at_bit_pos()));
             } else if (token.payload == "MemR7Imm16") {
                 part_list.emplace_back(std::make_shared<MemR7Imm16>(parse_at_bit_pos()));
+            } else if (token.payload == "BankFlags6") {
+                part_list.emplace_back(std::make_shared<BankFlags6>(parse_at_bit_pos()));
+            } else if (token.payload == "SwapTypes4") {
+                part_list.emplace_back(std::make_shared<SwapTypes4>(parse_at_bit_pos()));
+            } else if (token.payload == "Address16") {
+                part_list.emplace_back(std::make_shared<Address16>(parse_at_bit_pos()));
+            } else if (token.payload == "Address18") {
+                assert(parse_at_bit_pos() == 16 && !invert);
+                assert(str_starts_with(lexer.PeekToken().payload, "and"));
+                const size_t i = std::strtol(lexer.NextToken().payload.c_str() + 3, nullptr, 10);
+                part_list.emplace_back(std::make_shared<Address18>(i));
+            } else if (token.payload == "RelAddr7") {
+                part_list.emplace_back(std::make_shared<RelAddr7>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm2u") {
+                part_list.emplace_back(std::make_shared<Imm2u>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm4") {
+                part_list.emplace_back(std::make_shared<Imm4>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm4u") {
+                part_list.emplace_back(std::make_shared<Imm4u>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm5s") {
+                part_list.emplace_back(std::make_shared<Imm5s>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm5u") {
+                part_list.emplace_back(std::make_shared<Imm5u>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm6s") {
+                part_list.emplace_back(std::make_shared<Imm6s>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm7s") {
+                part_list.emplace_back(std::make_shared<Imm7s>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm8") {
+                part_list.emplace_back(std::make_shared<Imm8>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm8s") {
+                part_list.emplace_back(std::make_shared<Imm8s>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm9u") {
+                part_list.emplace_back(std::make_shared<Imm9u>(parse_at_bit_pos()));
             } else if (token.payload == "Imm8u") {
                 part_list.emplace_back(std::make_shared<Imm8u>(parse_at_bit_pos()));
             } else if (token.payload == "Imm16") {
                 part_list.emplace_back(std::make_shared<Imm16>(parse_at_bit_pos()));
+            } else if (token.payload == "Imm4bitno") {
+                part_list.emplace_back(std::make_shared<Imm4bitno>(parse_at_bit_pos()));
             } else if (token.payload == "stepZIDS") {
                 part_list.emplace_back(std::make_shared<stepZIDS>(parse_at_bit_pos()));
             } else if (token.payload == "modrstepZIDS") {
                 part_list.emplace_back(std::make_shared<modrstepZIDS>(parse_at_bit_pos()));
             } else if (token.payload == "stepII2D2S") {
                 part_list.emplace_back(std::make_shared<stepII2D2S>(parse_at_bit_pos()));
+            } else if (token.payload == "stepII2D2S0") {
+                part_list.emplace_back(std::make_shared<stepII2D2S0>(parse_at_bit_pos()));
             } else if (token.payload == "modrstepII2D2S0") {
                 part_list.emplace_back(std::make_shared<modrstepII2D2S0>(parse_at_bit_pos()));
+            } else if (token.payload == "stepD2S") {
+                part_list.emplace_back(std::make_shared<stepD2S>(parse_at_bit_pos()));
             } else if (token.payload == "stepII2") {
                 part_list.emplace_back(std::make_shared<stepII2>(parse_at_bit_pos()));
             } else if (token.payload == "modrstepI2") {
                 part_list.emplace_back(std::make_shared<modrstepI2>(parse_at_bit_pos()));
             } else if (token.payload == "modrstepD2") {
                 part_list.emplace_back(std::make_shared<modrstepD2>(parse_at_bit_pos()));
+            } else if (token.payload == "R0stepZIDS") {
+                part_list.emplace_back(std::make_shared<SingleIdentifierPart>("r0"));
+                part_list.emplace_back(std::make_shared<stepZIDS>(parse_at_bit_pos()));
             } else if (token.payload == "offsZI") {
                 combine_with_previous(std::make_shared<offsZI>(parse_at_bit_pos()));
             } else if (token.payload == "offsI") {
-                combine_with_previous(std::make_shared<offsI>(parse_at_bit_pos()));
+                combine_with_previous(std::make_shared<offsI>());
             } else if (token.payload == "offsZIDZ") {
                 combine_with_previous(std::make_shared<offsZIDZ>(parse_at_bit_pos()));
             } else if (token.payload == "Rn") {
@@ -230,7 +276,7 @@ void test_a() {
         InstructionPartList {
             std::make_shared<SingleIdentifierPart>("mov"),
             std::make_shared<MemImm16>(16),
-            std::make_shared<SingleIdentifierPart>(","),
+            std::make_shared<TokenTypePart<AsmToken::Comma>>(),
             std::make_shared<SetOfIdentifierPart>(set_Ax, 8),
         }
     };
@@ -252,12 +298,10 @@ int main() {
 
     auto line = GetLine(lexer);
 
-    /*
     printf("\nTokens:\n");
     for (const auto& token : *line) {
         printf("%s\n", AsmToken::ToString(token).c_str());
     }
-    */
 
     printf("\nHex:\n");
     for (auto& parser : table) {

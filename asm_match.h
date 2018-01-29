@@ -44,3 +44,11 @@ inline std::optional<std::uint32_t> MatchNumeric(TokenList& tl, bool signed_, si
     }
     return std::nullopt;
 }
+
+inline bool MatchSpecificNumeric(TokenList& tl, std::int64_t x) {
+    if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+        if (numeric->value == x)
+            return true;
+    }
+    return false;
+}

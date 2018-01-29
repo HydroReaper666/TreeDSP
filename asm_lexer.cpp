@@ -26,6 +26,7 @@ std::string ToString(const AsmToken& token) {
         [](CloseBracket) -> std::string { return "CloseBracket"; },
         [](DoublePipe) -> std::string { return "DoublePipe"; },
         [](Colon) -> std::string { return "Colon"; },
+        [](Comma) -> std::string { return "Comma"; },
 
         [](Numeric numeric) -> std::string {
             switch (numeric.size_marker) {
