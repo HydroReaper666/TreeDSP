@@ -443,8 +443,6 @@ public:
             if (!numeric->had_sign)
                 return std::nullopt;
             if (numeric->had_value) {
-                if (numeric->value < -1 || numeric->value > +1)
-                    return std::nullopt;
                 switch (numeric->value) {
                 case 0:
                     result = 0;
@@ -455,6 +453,8 @@ public:
                 case -1:
                     result = 2;
                     break;
+                default:
+                    return std::nullopt;
                 }
             } else {
                 if (numeric->is_negative)
@@ -472,6 +472,145 @@ public:
 
     std::uint32_t GetMask() const override {
         return 0b11 << bit_pos;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+using modrstepZIDS = stepZIDS;
+
+class stepII2D2S : public AsmInstructionPart {
+public:
+    explicit stepZIDS(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (numeric->had_value) {
+                switch (numeric->value) {
+                case +1:
+                    result = 0;
+                    break;
+                case +2:
+                    result = 1;
+                    break;
+                case -2:
+                    result = 2;
+                    break;
+                default:
+                    return std::nullopt;
+                }
+            } else {
+                if (numeric->is_negative)
+                    return std::nullopt;
+                if (!MatchIdentifier(tl, "s"))
+                    return std::nullopt;
+                result = 3;
+            }
+            result = result << bit_pos;
+        } else {
+            return std::nullopt;
+        }
+        return result;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0b11 << bit_pos;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+using modrstepII2D2S0 = stepII2D2S;
+
+class stepII2 : public AsmInstructionPart {
+public:
+    explicit stepII2(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (numeric->had_value) {
+                switch (numeric->value) {
+                case +1:
+                    result = 0;
+                    break;
+                case +2:
+                    result = 1;
+                    break;
+                default:
+                    return std::nullopt;
+                }
+            } else {
+                return std::nullopt;
+            }
+            result = result << bit_pos;
+        } else {
+            return std::nullopt;
+        }
+        return result;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0b1 << bit_pos;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+class modrstepI2 : public AsmInstructionPart {
+public:
+    explicit modrstepI2(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (!numeric->had_value)
+                return std::nullopt;
+            if (numeric->value != +2)
+                return std::nullopt;
+            return 0;
+        }
+        return std::nullopt;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+class modrstepD2 : public AsmInstructionPart {
+public:
+    explicit modrstepD2(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (!numeric->had_value)
+                return std::nullopt;
+            if (numeric->value != -2)
+                return std::nullopt;
+            return 0;
+        }
+        return std::nullopt;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0;
     }
 
 private:

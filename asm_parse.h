@@ -47,7 +47,7 @@ class InstructionParser {
 public:
     InstructionParser(std::uint16_t instruction_bits, InstructionPartList part_list) : instruction_bits(instruction_bits), part_list(part_list) {}
 
-    std::optional<std::vector<std::uint16_t>> TryParse(TokenList tl) const {
+    std::optional<std::vector<std::uint16_t>> TryParse(const TokenList& tl) const {
         auto set_bits = ProcessPartList(tl, part_list);
         if (!set_bits)
             return std::nullopt;

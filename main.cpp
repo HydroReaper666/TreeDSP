@@ -75,6 +75,18 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<Imm16>(parse_at_bit_pos()));
             } else if (token.payload == "stepZIDS") {
                 part_list.emplace_back(std::make_shared<stepZIDS>(parse_at_bit_pos()));
+            } else if (token.payload == "modrstepZIDS") {
+                part_list.emplace_back(std::make_shared<modrstepZIDS>(parse_at_bit_pos()));
+            } else if (token.payload == "stepII2D2S") {
+                part_list.emplace_back(std::make_shared<stepII2D2S>(parse_at_bit_pos()));
+            } else if (token.payload == "modrstepII2D2S0") {
+                part_list.emplace_back(std::make_shared<modrstepII2D2S0>(parse_at_bit_pos()));
+            } else if (token.payload == "stepII2") {
+                part_list.emplace_back(std::make_shared<stepII2>(parse_at_bit_pos()));
+            } else if (token.payload == "modrstepI2") {
+                part_list.emplace_back(std::make_shared<modrstepI2>(parse_at_bit_pos()));
+            } else if (token.payload == "modrstepD2") {
+                part_list.emplace_back(std::make_shared<modrstepD2>(parse_at_bit_pos()));
             } else if (token.payload == "Rn") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Rn, parse_at_bit_pos()));
             } else if (token.payload == "Ax") {
