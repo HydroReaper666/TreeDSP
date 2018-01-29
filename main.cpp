@@ -73,6 +73,8 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<Imm8u>(parse_at_bit_pos()));
             } else if (token.payload == "Imm16") {
                 part_list.emplace_back(std::make_shared<Imm16>(parse_at_bit_pos()));
+            } else if (token.payload == "stepZIDS") {
+                part_list.emplace_back(std::make_shared<stepZIDS>(parse_at_bit_pos()));
             } else if (token.payload == "Rn") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Rn, parse_at_bit_pos()));
             } else if (token.payload == "Ax") {
@@ -155,10 +157,12 @@ int main() {
 
     auto line = GetLine(lexer);
 
+    /*
     printf("\nTokens:\n");
     for (const auto& token : *line) {
         printf("%s\n", AsmToken::ToString(token).c_str());
     }
+    */
 
     printf("\nHex:\n");
     for (auto& parser : table) {

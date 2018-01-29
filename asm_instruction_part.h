@@ -128,16 +128,17 @@ public:
     }
 };
 
-// [Rn]
-class MemRn : public AsmInstructionPart {
+// [register]
+template <const std::vector<std::string>& set>
+class MemRegx : public AsmInstructionPart {
 public:
-    explicit MemRn(size_t bit_pos) : bit_pos(bit_pos) {}
+    explicit MemRegx(size_t bit_pos) : bit_pos(bit_pos) {}
 
     std::optional<std::uint32_t> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
-        if (auto i = MatchIdentifierSet(tl, set_Rn)) {
+        if (auto i = MatchIdentifierSet(tl, set)) {
             result = *i << bit_pos;
         } else {
             return std::nullopt;
@@ -154,6 +155,8 @@ public:
 private:
     size_t bit_pos;
 };
+
+using MemRn = MemRegx<set_Rn>;
 
 // [code:movpd:Rn]
 class ProgMemRn : public AsmInstructionPart {
@@ -420,3 +423,48 @@ private:
 
 using Imm8u = ImmU<8>;
 using Imm16 = ImmU<16>;
+
+class stepZIDS : public AsmInstructionPart {
+public:
+    explicit stepZIDS(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (numeric->had_value) {
+                if (numeric->value < -1 || numeric->value > +1)
+                    return std::nullopt;
+                switch (numeric->value) {
+                case 0:
+                    result = 0;
+                    break;
+                case +1:
+                    result = 1;
+                    break;
+                case -1:
+                    result = 2;
+                    break;
+                }
+            } else {
+                if (numeric->is_negative)
+                    return std::nullopt;
+                if (!MatchIdentifier(tl, "s"))
+                    return std::nullopt;
+                result = 3;
+            }
+            result = result << bit_pos;
+        } else {
+            return 0;
+        }
+        return result;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0b11 << bit_pos;
+    }
+
+private:
+    size_t bit_pos;
+};

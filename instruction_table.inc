@@ -5,9 +5,9 @@ A600h add  MemImm8@0, Ax@8
 C600h add  Imm8u@0, Ax@8
 D4DBh add  MemR7Imm16@16, Ax@8
 4600h add  MemR7Imm7s@0, Ax@8
+8680h add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 )";
 const std::string moo = R"(
-8680h add  MemRn@0, Ax@8 || Rn@0stepZIDS@3
 86A0h add  RegisterP0@0, Ax@8
 D2DAh add  Ab@10, Bx@0
 5DF0h add  Bx@1, Ax@0

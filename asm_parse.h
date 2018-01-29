@@ -26,6 +26,9 @@ inline std::optional<SetBits> ProcessPartList(TokenList tl, const InstructionPar
         }
     }
 
+    if (!tl.empty())
+        return std::nullopt;
+
     std::uint32_t bits = 0;
     std::uint32_t mask = 0;
     for (auto& result : results) {

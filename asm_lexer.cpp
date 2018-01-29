@@ -127,7 +127,7 @@ Token AsmLexer::NextToken() {
     if (s.peek() == '|') {
         s.get();
         if (s.get() == '|')
-            return AsmToken::Identifier{"||"};
+            return AsmToken::DoublePipe{};
         return AsmToken::Error{};
     }
     if (s.peek() == ':') {
