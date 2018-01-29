@@ -53,6 +53,20 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::Colon>>());
             } else if (token.payload == "MemSp") {
                 part_list.emplace_back(std::make_shared<MemSp>());
+            } else if (token.payload == "MemR0") {
+                part_list.emplace_back(std::make_shared<MemR0>());
+            } else if (token.payload == "MemR01") {
+                part_list.emplace_back(std::make_shared<MemR01>(parse_at_bit_pos()));
+            } else if (token.payload == "MemR0123") {
+                part_list.emplace_back(std::make_shared<MemR0123>(parse_at_bit_pos()));
+            } else if (token.payload == "MemR04") {
+                part_list.emplace_back(std::make_shared<MemR04>(parse_at_bit_pos()));
+            } else if (token.payload == "MemR0425") {
+                part_list.emplace_back(std::make_shared<MemR0425>(parse_at_bit_pos()));
+            } else if (token.payload == "MemR45") {
+                part_list.emplace_back(std::make_shared<MemR45>(parse_at_bit_pos()));
+            } else if (token.payload == "MemR4567") {
+                part_list.emplace_back(std::make_shared<MemR4567>(parse_at_bit_pos()));
             } else if (token.payload == "MemRn") {
                 part_list.emplace_back(std::make_shared<MemRn>(parse_at_bit_pos()));
             } else if (token.payload == "ProgMemRn") {

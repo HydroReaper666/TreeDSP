@@ -10,17 +10,12 @@
 
 using InstructionPartList = std::vector<std::shared_ptr<AsmInstructionPart>>;
 
-struct SetBits {
-    std::uint32_t bits = 0;
-    std::uint32_t mask = 0;
-};
-
 inline std::optional<SetBits> ProcessPartList(TokenList tl, const InstructionPartList& part_list) {
     std::vector<SetBits> results;
 
     for (auto& part : part_list) {
         if (auto result = part->Parse(tl)) {
-            results.emplace_back(SetBits{*result, part->GetMask()});
+            results.emplace_back(*result);
         } else {
             return std::nullopt;
         }

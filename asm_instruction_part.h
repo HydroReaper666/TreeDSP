@@ -7,11 +7,16 @@
 #include "asm_match.h"
 #include "bit_util.h"
 
+struct SetBits {
+    std::uint32_t bits = 0;
+    std::uint32_t mask = 0;
+};
+
 class AsmInstructionPart {
 public:
     virtual ~AsmInstructionPart() = default;
 
-    virtual std::optional<std::uint32_t> Parse(TokenList& tl) const = 0;
+    virtual std::optional<SetBits> Parse(TokenList& tl) const = 0;
     virtual std::uint32_t GetMask() const = 0;
 };
 
@@ -19,9 +24,9 @@ class SingleIdentifierPart : public AsmInstructionPart {
 public:
     explicit SingleIdentifierPart(const std::string& s) : s(s) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         if (MatchIdentifier(tl, s))
-            return 0;
+            return SetBits{0, 0};
         return std::nullopt;
     }
 
@@ -37,13 +42,13 @@ class SetOfIdentifierPart : public AsmInstructionPart {
 public:
     SetOfIdentifierPart(const std::vector<std::string>& v, size_t bit_pos, bool invert = false) : v(v), bit_pos(bit_pos), invert(invert) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         if (auto i = MatchIdentifierSet(tl, v)) {
             std::uint32_t bits = *i << bit_pos;
             if (invert) {
                 bits = bits ^ GetMask();
             }
-            return bits;
+            return SetBits{bits, GetMask()};
         }
         return std::nullopt;
     }
@@ -63,9 +68,9 @@ class TokenTypePart : public AsmInstructionPart {
 public:
     explicit TokenTypePart() {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         if (Match<T>(tl))
-            return 0;
+            return SetBits{0, 0};
         return std::nullopt;
     }
 
@@ -103,9 +108,9 @@ class Not : public AsmInstructionPart {
 public:
     explicit Not(std::shared_ptr<AsmInstructionPart> instruction_part) : instruction_part(instruction_part) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         if (auto result = instruction_part->Parse(tl)) {
-            return *result ^ GetMask();
+            return SetBits{result->bits ^ result->mask, result->mask};
         }
         return std::nullopt;
     }
@@ -121,7 +126,7 @@ private:
 // [sp]
 class MemSp : public AsmInstructionPart {
 public:
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -129,7 +134,26 @@ public:
             return std::nullopt;
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0;
+    }
+};
+
+// [r0]
+class MemR0 : public AsmInstructionPart {
+public:
+    std::optional<SetBits> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (!Match<AsmToken::OpenBracket>(tl))
+            return std::nullopt;
+        if (!MatchIdentifier(tl, "r0"))
+            return std::nullopt;
+        if (!Match<AsmToken::CloseBracket>(tl))
+            return std::nullopt;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -139,11 +163,11 @@ public:
 
 // [register]
 template <const std::vector<std::string>& set>
-class MemRegx : public AsmInstructionPart {
+class MemRx : public AsmInstructionPart {
 public:
-    explicit MemRegx(size_t bit_pos) : bit_pos(bit_pos) {}
+    explicit MemRx(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -154,7 +178,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -165,14 +189,20 @@ private:
     size_t bit_pos;
 };
 
-using MemRn = MemRegx<set_Rn>;
+using MemR01 = MemRx<set_R01>;
+using MemR0123 = MemRx<set_R0123>;
+using MemR04 = MemRx<set_R04>;
+using MemR0425 = MemRx<set_R0425>;
+using MemR45 = MemRx<set_R45>;
+using MemR4567 = MemRx<set_R4567>;
+using MemRn = MemRx<set_Rn>;
 
 // [code:movpd:Rn]
 class ProgMemRn : public AsmInstructionPart {
 public:
     explicit ProgMemRn(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -191,7 +221,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -207,7 +237,7 @@ class ProgMemAxl : public AsmInstructionPart {
 public:
     explicit ProgMemAxl(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -226,7 +256,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -242,7 +272,7 @@ class ProgMemAx : public AsmInstructionPart {
 public:
     explicit ProgMemAx(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -257,7 +287,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -273,7 +303,7 @@ class MemImm8 : public AsmInstructionPart {
 public:
     explicit MemImm8(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -288,7 +318,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -304,7 +334,7 @@ class MemImm16 : public AsmInstructionPart {
 public:
     explicit MemImm16(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -315,7 +345,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -331,7 +361,7 @@ class MemR7Imm7s : public AsmInstructionPart {
 public:
     explicit MemR7Imm7s(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -344,7 +374,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -360,7 +390,7 @@ class MemR7Imm16 : public AsmInstructionPart {
 public:
     explicit MemR7Imm16(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
@@ -373,7 +403,7 @@ public:
         }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -389,14 +419,14 @@ class ImmU : public AsmInstructionPart {
 public:
     explicit ImmU(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto i = MatchNumeric(tl, false, size)) {
             result = *i << bit_pos;
         } else {
             return std::nullopt;
         }
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -412,14 +442,14 @@ class ImmS : public AsmInstructionPart {
 public:
     explicit ImmS(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto i = MatchNumeric(tl, true, size)) {
             result = *i << bit_pos;
         } else {
             return std::nullopt;
         }
-        return result;
+        return SetBits{result, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -437,7 +467,7 @@ class stepZIDS : public AsmInstructionPart {
 public:
     explicit stepZIDS(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
@@ -445,29 +475,21 @@ public:
             if (numeric->had_value) {
                 switch (numeric->value) {
                 case 0:
-                    result = 0;
-                    break;
+                    return SetBits{0u << bit_pos, GetMask()};
                 case +1:
-                    result = 1;
-                    break;
+                    return SetBits{1u << bit_pos, GetMask()};
                 case -1:
-                    result = 2;
-                    break;
-                default:
-                    return std::nullopt;
+                    return SetBits{2u << bit_pos, GetMask()};
                 }
-            } else {
-                if (numeric->is_negative)
-                    return std::nullopt;
-                if (!MatchIdentifier(tl, "s"))
-                    return std::nullopt;
-                result = 3;
+                return std::nullopt;
             }
-            result = result << bit_pos;
-        } else {
-            return 0;
+            if (numeric->is_negative)
+                return std::nullopt;
+            if (!MatchIdentifier(tl, "s"))
+                return std::nullopt;
+            return SetBits{3u << bit_pos, GetMask()};
         }
-        return result;
+        return SetBits{0u << bit_pos, GetMask()};
     }
 
     std::uint32_t GetMask() const override {
@@ -482,9 +504,9 @@ using modrstepZIDS = stepZIDS;
 
 class stepII2D2S : public AsmInstructionPart {
 public:
-    explicit stepZIDS(size_t bit_pos) : bit_pos(bit_pos) {}
+    explicit stepII2D2S(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
@@ -492,29 +514,21 @@ public:
             if (numeric->had_value) {
                 switch (numeric->value) {
                 case +1:
-                    result = 0;
-                    break;
+                    return SetBits{0u << bit_pos, GetMask()};
                 case +2:
-                    result = 1;
-                    break;
+                    return SetBits{1u << bit_pos, GetMask()};
                 case -2:
-                    result = 2;
-                    break;
-                default:
-                    return std::nullopt;
+                    return SetBits{2u << bit_pos, GetMask()};
                 }
-            } else {
-                if (numeric->is_negative)
-                    return std::nullopt;
-                if (!MatchIdentifier(tl, "s"))
-                    return std::nullopt;
-                result = 3;
+                return std::nullopt;
             }
-            result = result << bit_pos;
-        } else {
-            return std::nullopt;
+            if (numeric->is_negative)
+                return std::nullopt;
+            if (!MatchIdentifier(tl, "s"))
+                return std::nullopt;
+            return SetBits{3u << bit_pos, GetMask()};
         }
-        return result;
+        return std::nullopt;
     }
 
     std::uint32_t GetMask() const override {
@@ -531,30 +545,22 @@ class stepII2 : public AsmInstructionPart {
 public:
     explicit stepII2(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
                 return std::nullopt;
-            if (numeric->had_value) {
-                switch (numeric->value) {
-                case +1:
-                    result = 0;
-                    break;
-                case +2:
-                    result = 1;
-                    break;
-                default:
-                    return std::nullopt;
-                }
-            } else {
+            if (!numeric->had_value)
                 return std::nullopt;
+            switch (numeric->value) {
+            case +1:
+                return SetBits{0u << bit_pos, GetMask()};
+            case +2:
+                return SetBits{1u << bit_pos, GetMask()};
             }
-            result = result << bit_pos;
-        } else {
             return std::nullopt;
         }
-        return result;
+        return std::nullopt;
     }
 
     std::uint32_t GetMask() const override {
@@ -569,7 +575,7 @@ class modrstepI2 : public AsmInstructionPart {
 public:
     explicit modrstepI2(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
@@ -578,7 +584,7 @@ public:
                 return std::nullopt;
             if (numeric->value != +2)
                 return std::nullopt;
-            return 0;
+            return SetBits{0, 0};
         }
         return std::nullopt;
     }
@@ -595,7 +601,7 @@ class modrstepD2 : public AsmInstructionPart {
 public:
     explicit modrstepD2(size_t bit_pos) : bit_pos(bit_pos) {}
 
-    std::optional<std::uint32_t> Parse(TokenList& tl) const override {
+    std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
@@ -604,13 +610,101 @@ public:
                 return std::nullopt;
             if (numeric->value != -2)
                 return std::nullopt;
-            return 0;
+            return SetBits{0, 0};
         }
         return std::nullopt;
     }
 
     std::uint32_t GetMask() const override {
         return 0;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+class offsZI : public AsmInstructionPart {
+public:
+    explicit offsZI(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<SetBits> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (!numeric->had_value)
+                return std::nullopt;
+            switch (numeric->value) {
+            case 0:
+                return SetBits{0u << bit_pos, GetMask()};
+            case +1:
+                return SetBits{1u << bit_pos, GetMask()};
+            }
+            return std::nullopt;
+        }
+        return SetBits{0u << bit_pos, GetMask()};
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0b1 << bit_pos;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+class offsI : public AsmInstructionPart {
+public:
+    explicit offsI(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<SetBits> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (!numeric->had_value)
+                return std::nullopt;
+            if (numeric->value != +1)
+                return std::nullopt;
+            return SetBits{0, 0};
+        }
+        return std::nullopt;
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0;
+    }
+
+private:
+    size_t bit_pos;
+};
+
+class offsZIDZ : public AsmInstructionPart {
+public:
+    explicit offsZIDZ(size_t bit_pos) : bit_pos(bit_pos) {}
+
+    std::optional<SetBits> Parse(TokenList& tl) const override {
+        std::uint32_t result = 0;
+        if (auto numeric = Match<AsmToken::Numeric>(tl)) {
+            if (!numeric->had_sign)
+                return std::nullopt;
+            if (numeric->had_value) {
+                switch (numeric->value) {
+                case 0:
+                    return SetBits{0, 0}; // 0 or 3
+                case +1:
+                    return SetBits{1u << bit_pos, GetMask()};
+                case -1:
+                    return SetBits{2u << bit_pos, GetMask()};
+                }
+            }
+            return std::nullopt;
+        }
+        return SetBits{0, 0}; // 0 or 3
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0b11 << bit_pos;
     }
 
 private:
