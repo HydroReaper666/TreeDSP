@@ -146,6 +146,21 @@ private:
     std::shared_ptr<AsmInstructionPart> instruction_part;
 };
 
+// Constant integer
+template <std::int64_t value>
+class Const : public AsmInstructionPart {
+public:
+    std::optional<SetBits> Parse(TokenList& tl) const override {
+        if (!MatchSpecificNumeric(tl, value))
+            return std::nullopt;
+        return SetBits{0, 0};
+    }
+
+    std::uint32_t GetMask() const override {
+        return 0;
+    }
+};
+
 // [sp]
 class MemSp : public AsmInstructionPart {
 public:

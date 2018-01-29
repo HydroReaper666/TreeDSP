@@ -69,6 +69,9 @@ std::vector<InstructionParser> BuildParserTable() {
             if (token.payload == "Implied") {
                 // Ignore
                 continue;
+            } else if (token.payload == "Not") {
+                // Ignore
+                continue;
             } else if (token.payload == "NoReverse") {
                 assert(lexer.NextToken().payload == ",");
                 continue;
@@ -88,6 +91,14 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::Colon>>());
             } else if (token.payload == ",") {
                 part_list.emplace_back(std::make_shared<TokenTypePart<AsmToken::Comma>>());
+            } else if (token.payload == "ConstZero") {
+                part_list.emplace_back(std::make_shared<Const<0>>());
+            } else if (token.payload == "Const1") {
+                part_list.emplace_back(std::make_shared<Const<1>>());
+            } else if (token.payload == "Const4") {
+                part_list.emplace_back(std::make_shared<Const<4>>());
+            } else if (token.payload == "Const8000h") {
+                part_list.emplace_back(std::make_shared<Const<0x8000>>());
             } else if (token.payload == "MemSp") {
                 part_list.emplace_back(std::make_shared<MemSp>());
             } else if (token.payload == "MemR0") {
@@ -245,6 +256,7 @@ std::vector<InstructionParser> BuildParserTable() {
             } else if (token.payload == "Arp") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Arp, parse_at_bit_pos()));
             } else {
+                assert(token.payload[0] >= 'a' && token.payload[0] <= 'z');
                 part_list.emplace_back(std::make_shared<SingleIdentifierPart>(token.payload));
             }
 
