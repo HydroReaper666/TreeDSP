@@ -106,6 +106,11 @@ const std::vector<std::string> set_R45 { "r4", "r5" };
 const std::vector<std::string> set_R0123 { "r0", "r1", "r2", "r3" };
 const std::vector<std::string> set_R0425 { "r0", "r4", "r2", "r5" };
 const std::vector<std::string> set_R4567 { "r4", "r5", "r6", "r7" };
+const std::vector<std::string> set_ArArpSttMod { "ar0", "ar1", "arp0", "arp1", "arp2", "arp3", "-", "-", "stt0", "stt1", "stt2", "-", "mod0", "mod1", "mod2", "mod3" };
+const std::vector<std::string> set_ArArp { "ar0", "ar1", "arp0", "arp1", "arp2", "arp3", "-", "-" };
+const std::vector<std::string> set_SttMod { "stt0", "stt1", "stt2", "-", "mod0", "mod1", "mod2", "mod3" };
+const std::vector<std::string> set_Ar { "ar0", "ar1" };
+const std::vector<std::string> set_Arp { "arp0", "arp1", "arp2", "arp3" };
 
 // not
 class Not : public AsmInstructionPart {

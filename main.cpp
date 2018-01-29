@@ -158,6 +158,16 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R0425, parse_at_bit_pos()));
             } else if (token.payload == "R4567") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_R4567, parse_at_bit_pos()));
+            } else if (token.payload == "ArArpSttMod") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_ArArpSttMod, parse_at_bit_pos()));
+            } else if (token.payload == "ArArp") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_ArArp, parse_at_bit_pos()));
+            } else if (token.payload == "SttMod") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_SttMod, parse_at_bit_pos()));
+            } else if (token.payload == "Ar") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Ar, parse_at_bit_pos()));
+            } else if (token.payload == "Arp") {
+                part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Arp, parse_at_bit_pos()));
             } else {
                 part_list.emplace_back(std::make_shared<SingleIdentifierPart>(token.payload));
             }
