@@ -149,7 +149,7 @@ public:
     }
 
     std::uint32_t GetMask() const override {
-        return 0b111 << bit_pos;
+        return Ones<std::uint32_t>(Log2(set.size())) << bit_pos;
     }
 
 private:
