@@ -9,8 +9,6 @@ D4DBh add  MemR7Imm16@16, Ax@8
 86A0h add  RegisterP0@0, Ax@8
 D2DAh add  Ab@10, Bx@0
 5DF0h add  Bx@1, Ax@0
-)";
-const std::string moo = R"(
 9070h add  MemR01@8, sv, Abh@2 || sub MemR01@8offsZI@0, sv, Abl@2 || mov Abl@2, MemR45@8 || R01@8stepII2@0, R45@8stepII2@1
 5DB0h add  MemR04@1, sv, Abh@2 || sub MemR04@1offsZI@0, sv, Abl@2 || R04@1stepII2@0
 6F80h add  MemR45@2, MemR01@2, Abh@3 || add MemR45@2offsZI@1, MemR01@2offsZI@0, Abl@3 || R01@2stepII2@0, R45@2stepII2@1
@@ -51,6 +49,8 @@ D4D9h and  MemR7Imm16@16, Ax@8
 82A0h and  RegisterP0@0, Ax@8
 6770h and  Ab@2, Ab@0, Ax@12                ;TL2 only
 D389h and  r6, Ax@4
+)";
+const std::string to_do_list = R"(
 4B80h banke BankFlags6@0  ;{r0}{,r1}{,r4}{,cfgi}{,r7}{,cfgj}
 8CDFh bankr       ;without operand ?
 8CDCh bankr Ar@0

@@ -43,6 +43,11 @@ std::vector<InstructionParser> BuildParserTable() {
                 return std::strtol(lexer.NextToken().payload.c_str(), nullptr, 10);
             };
 
+            const auto combine_with_previous = [&](std::shared_ptr<AsmInstructionPart> next) {
+                assert(!invert); // invert doesn't make sense in this context
+                part_list.back()->CombineWith(next);
+            };
+
             if (token.payload == "Implied") {
                 // Ignore
             } else if (token.payload == "NoReverse") {
@@ -101,6 +106,12 @@ std::vector<InstructionParser> BuildParserTable() {
                 part_list.emplace_back(std::make_shared<modrstepI2>(parse_at_bit_pos()));
             } else if (token.payload == "modrstepD2") {
                 part_list.emplace_back(std::make_shared<modrstepD2>(parse_at_bit_pos()));
+            } else if (token.payload == "offsZI") {
+                combine_with_previous(std::make_shared<offsZI>(parse_at_bit_pos()));
+            } else if (token.payload == "offsI") {
+                combine_with_previous(std::make_shared<offsI>(parse_at_bit_pos()));
+            } else if (token.payload == "offsZIDZ") {
+                combine_with_previous(std::make_shared<offsZIDZ>(parse_at_bit_pos()));
             } else if (token.payload == "Rn") {
                 part_list.emplace_back(std::make_shared<SetOfIdentifierPart>(set_Rn, parse_at_bit_pos()));
             } else if (token.payload == "Ax") {

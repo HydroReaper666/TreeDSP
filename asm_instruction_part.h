@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <stdexcept>
 
 #include "asm_match.h"
 #include "bit_util.h"
@@ -18,6 +19,9 @@ public:
 
     virtual std::optional<SetBits> Parse(TokenList& tl) const = 0;
     virtual std::uint32_t GetMask() const = 0;
+    virtual void CombineWith(std::shared_ptr<AsmInstructionPart> next) {
+        throw std::logic_error("Invalid AsmInstructionPart::CombineWith");
+    }
 };
 
 class SingleIdentifierPart : public AsmInstructionPart {
@@ -162,6 +166,7 @@ public:
 };
 
 // [register]
+// [register+/-offs]
 template <const std::vector<std::string>& set>
 class MemRx : public AsmInstructionPart {
 public:
@@ -169,6 +174,7 @@ public:
 
     std::optional<SetBits> Parse(TokenList& tl) const override {
         std::uint32_t result = 0;
+        std::uint32_t mask = GetMask();
         if (!Match<AsmToken::OpenBracket>(tl))
             return std::nullopt;
         if (auto i = MatchIdentifierSet(tl, set)) {
@@ -176,17 +182,31 @@ public:
         } else {
             return std::nullopt;
         }
+        if (offs) {
+            if (auto offs_result = offs->Parse(tl)) {
+                assert((mask & offs_result->mask) == 0);
+                result |= offs_result->bits;
+                mask |= offs_result->mask;
+            } else {
+                return std::nullopt;
+            }
+        }
         if (!Match<AsmToken::CloseBracket>(tl))
             return std::nullopt;
-        return SetBits{result, GetMask()};
+        return SetBits{result, mask};
     }
 
     std::uint32_t GetMask() const override {
         return Ones<std::uint32_t>(Log2(set.size())) << bit_pos;
     }
 
+    virtual void CombineWith(std::shared_ptr<AsmInstructionPart> next) override {
+        offs = next;
+    }
+
 private:
     size_t bit_pos;
+    std::shared_ptr<AsmInstructionPart> offs;
 };
 
 using MemR01 = MemRx<set_R01>;
@@ -628,7 +648,6 @@ public:
     explicit offsZI(size_t bit_pos) : bit_pos(bit_pos) {}
 
     std::optional<SetBits> Parse(TokenList& tl) const override {
-        std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
                 return std::nullopt;
@@ -658,7 +677,6 @@ public:
     explicit offsI(size_t bit_pos) : bit_pos(bit_pos) {}
 
     std::optional<SetBits> Parse(TokenList& tl) const override {
-        std::uint32_t result = 0;
         if (auto numeric = Match<AsmToken::Numeric>(tl)) {
             if (!numeric->had_sign)
                 return std::nullopt;
