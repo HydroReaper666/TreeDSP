@@ -3,4 +3,4 @@
 set -e
 set -x
 
-brew install llvm
+brew install boost llvm
