@@ -11,8 +11,8 @@
 #include "asm_parse.h"
 #include "instruction_table_lexer.h"
 
-std::optional<SetBits> ProcessPartList(TokenList tl, const InstructionPartList& part_list) {
-    std::vector<SetBits> results;
+std::optional<PartParseResult> ProcessPartList(TokenList tl, const InstructionPartList& part_list) {
+    std::vector<PartParseResult> results;
 
     for (auto& part : part_list) {
         if (auto result = part->Parse(tl)) {
@@ -36,7 +36,7 @@ std::optional<SetBits> ProcessPartList(TokenList tl, const InstructionPartList& 
         mask |= result.mask;
     }
 
-    return SetBits{bits, mask};
+    return PartParseResult{bits, mask};
 }
 
 InstructionParser::InstructionParser(std::uint16_t instruction_bits, InstructionPartList part_list)

@@ -5,13 +5,13 @@
 #include <optional>
 #include <vector>
 
-#include "parse_result.h"
+#include "part_parse_result.h"
 
 class AsmInstructionPart;
 
 using InstructionPartList = std::vector<std::shared_ptr<AsmInstructionPart>>;
 
-std::optional<ParseResult> ProcessPartList(TokenList tl, const InstructionPartList& part_list);
+std::optional<PartParseResult> ProcessPartList(TokenList tl, const InstructionPartList& part_list);
 
 class InstructionParser {
 public:
