@@ -1,0 +1,22 @@
+language: cpp
+
+matrix:
+  include:
+    - env: NAME="Linux Build"
+      os: linux
+      dist: trusty
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-7
+            - g++-7
+      install: ./.ci/build-x86_64-linux/deps.sh
+      script: ./.ci/build-x86_64-linux/build.sh
+    - env: NAME="macOS Build"
+      os: osx
+      sudo: false
+      osx_image: xcode9.2
+      install: ./.ci/build-x86_64-macos/deps.sh
+      script: ./.ci/build-x86_64-macos/build.sh
