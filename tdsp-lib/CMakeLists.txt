@@ -10,6 +10,8 @@ add_library(tdsp-lib STATIC
     instruction_table_lexer.cpp
     instruction_table_lexer.h
     part_parse_result.h
+    sha256.cpp
+    sha256.h
     variant_util.h
 )
 

@@ -1,5 +1,6 @@
 add_executable(tdsp-tests
     main.cpp
+    sha256.cpp
 )
 
 include(CreateDirectoryGroups)
