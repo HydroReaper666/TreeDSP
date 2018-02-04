@@ -1,14 +1,18 @@
+#include <algorithm>
+#include <iterator>
+
 #include "asm_lexer.h"
 #include "variant_util.h"
 
 using Token = AsmToken::AsmToken;
 
 template <typename T>
-T AsmLexer::LexId() {
+T AsmLexer::LexId(size_t current_position) {
     T result;
+    result.byte_position = current_position;
 
-    while ((s.peek() >= '0' && s.peek() <= '9') || (s.peek() >= 'a' && s.peek() <= 'z') || (s.peek() >= 'A' && s.peek() <= 'Z')) {
-        int ch = s.get();
+    while ((Peek() >= '0' && Peek() <= '9') || (Peek() >= 'a' && Peek() <= 'z') || (Peek() >= 'A' && Peek() <= 'Z')) {
+        int ch = Get();
         result.value += (char)ch;
     }
 
@@ -54,7 +58,9 @@ std::string ToString(const AsmToken& token) {
 }
 } // namespace AsmToken
 
-AsmLexer::AsmLexer(std::istream& stream) : s(stream) {}
+AsmLexer::AsmLexer(std::istream& stream) : s(stream) {
+    line_begin_pos.push_back(0);
+}
 
 Token AsmLexer::PeekToken() {
     if (!current_token)
@@ -69,138 +75,152 @@ Token AsmLexer::NextToken() {
 
     SkipWhitespace();
 
-    if (s.peek() == '\n') {
+    const size_t current_position = byte_position;
+
+    if (Peek() == '\n') {
         start_of_line = true;
-        s.get();
-        return AsmToken::EndOfLine{};
+        Get();
+        line_begin_pos.push_back(byte_position);
+        return AsmToken::EndOfLine{current_position};
     }
-    if (s.peek() == EOF) {
-        return AsmToken::EndOfFile{};
+    if (Peek() == EOF) {
+        return AsmToken::EndOfFile{current_position};
     }
-    if ((s.peek() >= 'a' && s.peek() <= 'z') || (s.peek() >= 'A' && s.peek() <= 'Z')) {
-        return LexId<AsmToken::Identifier>();
+    if ((Peek() >= 'a' && Peek() <= 'z') || (Peek() >= 'A' && Peek() <= 'Z')) {
+        return LexId<AsmToken::Identifier>(current_position);
     }
-    if (s.peek() == '#') {
-        s.get();
+    if (Peek() == '#') {
+        Get();
         AsmToken::SizeMarker size_marker = AsmToken::SizeMarker::Small;
-        if (s.peek() == '#') {
-            s.get();
+        if (Peek() == '#') {
+            Get();
             size_marker = AsmToken::SizeMarker::Big;
         }
-        if (s.peek() == '$') {
-            s.get();
-            auto result = LexId<AsmToken::Label>();
+        if (Peek() == '$') {
+            Get();
+            auto result = LexId<AsmToken::Label>(current_position);
             result.size_marker = size_marker;
             return result;
         }
-        if ((s.peek() >= '0' && s.peek() <= '9') || s.peek() == '-' || s.peek() == '+') {
-            auto result = LexNumeric();
+        if ((Peek() >= '0' && Peek() <= '9') || Peek() == '-' || Peek() == '+') {
+            auto result = LexNumeric(current_position);
             if (result.size_marker != AsmToken::SizeMarker::None)
-                return AsmToken::Error{};
+                return AsmToken::Error{current_position};
             result.size_marker = size_marker;
             return result;
         }
-        return AsmToken::Error{};
+        return AsmToken::Error{current_position};
     }
-    if ((s.peek() >= '0' && s.peek() <= '9') || s.peek() == '-' || s.peek() == '+') {
-        return LexNumeric();
+    if ((Peek() >= '0' && Peek() <= '9') || Peek() == '-' || Peek() == '+') {
+        return LexNumeric(current_position);
     }
-    if (s.peek() == '$') {
-        s.get();
-        return LexId<AsmToken::Label>();
+    if (Peek() == '$') {
+        Get();
+        return LexId<AsmToken::Label>(current_position);
     }
-    if (s.peek() == '.') {
-        s.get();
-        return LexId<AsmToken::MetaStatement>();
+    if (Peek() == '.') {
+        Get();
+        return LexId<AsmToken::MetaStatement>(current_position);
     }
-    if (s.peek() == '[') {
-        s.get();
-        return AsmToken::OpenBracket{};
+    if (Peek() == '[') {
+        Get();
+        return AsmToken::OpenBracket{current_position};
     }
-    if (s.peek() == ']') {
-        s.get();
-        return AsmToken::CloseBracket{};
+    if (Peek() == ']') {
+        Get();
+        return AsmToken::CloseBracket{current_position};
     }
-    if (s.peek() == ',') {
-        s.get();
-        return AsmToken::Comma{};
+    if (Peek() == ',') {
+        Get();
+        return AsmToken::Comma{current_position};
     }
-    if (s.peek() == '|') {
-        s.get();
-        if (s.get() == '|')
-            return AsmToken::DoublePipe{};
-        return AsmToken::Error{};
+    if (Peek() == '|') {
+        Get();
+        if (Get() == '|')
+            return AsmToken::DoublePipe{current_position};
+        return AsmToken::Error{current_position};
     }
-    if (s.peek() == ':') {
-        s.get();
-        return AsmToken::Colon{};
+    if (Peek() == ':') {
+        Get();
+        return AsmToken::Colon{current_position};
     }
-    if (s.peek() == '_') {
-        s.get();
-        return AsmToken::Identifier{"_"};
+    if (Peek() == '_') {
+        Get();
+        return AsmToken::Identifier{current_position, "_"};
     }
 
-    return AsmToken::Error{};
+    return AsmToken::Error{current_position};
+}
+
+TokenPosition AsmLexer::GetPositionOf(const Token& token) const {
+    const size_t byte_position = std::visit([](const auto& t) { return t.byte_position; }, token);
+    const auto iter = std::prev(std::upper_bound(line_begin_pos.begin(), line_begin_pos.end(), byte_position));
+    TokenPosition result;
+    result.byte_position = byte_position;
+    result.line = std::distance(line_begin_pos.begin(), iter) + 1;
+    result.column = byte_position - *iter + 1;
+    return result;
 }
 
 void AsmLexer::SkipWhitespace() {
-    while (s.peek() == ' ' || s.peek() == '\t' || s.peek() == '\r') {
-        s.get();
+    while (Peek() == ' ' || Peek() == '\t' || Peek() == '\r') {
+        Get();
     }
 
     // Comment til end of line
-    if (s.peek() == ';') {
-        while (s.peek() != '\n') {
-            s.get();
+    if (Peek() == ';') {
+        while (Peek() != '\n') {
+            Get();
         }
     }
 }
 
-AsmToken::Numeric AsmLexer::LexNumeric() {
+AsmToken::Numeric AsmLexer::LexNumeric(size_t current_position) {
     AsmToken::Numeric result;
+    result.byte_position = current_position;
 
-    if (s.peek() == '+') {
-        s.get();
+    if (Peek() == '+') {
+        Get();
         result.had_sign = true;
         SkipWhitespace();
-    } else if (s.peek() == '-') {
-        s.get();
+    } else if (Peek() == '-') {
+        Get();
         result.had_sign = true;
         result.is_negative = true;
         SkipWhitespace();
     }
 
-    if (s.peek() == '#') {
-        s.get();
+    if (Peek() == '#') {
+        Get();
         result.size_marker = AsmToken::SizeMarker::Small;
-        if (s.peek() == '#') {
-            s.get();
+        if (Peek() == '#') {
+            Get();
             result.size_marker = AsmToken::SizeMarker::Big;
         }
         SkipWhitespace();
     }
 
-    if (!(s.peek() >= '0' && s.peek() <= '9')) {
+    if (!(Peek() >= '0' && Peek() <= '9')) {
         result.had_value = false;
         return result;
     }
 
-    if (s.peek() == '0') {
-        s.get();
-        if (s.peek() == 'x') {
-            s.get();
+    if (Peek() == '0') {
+        Get();
+        if (Peek() == 'x') {
+            Get();
             while (true) {
-                int ch = s.peek();
+                int ch = Peek();
                 if (ch >= '0' && ch <= '9') {
-                    s.get();
+                    Get();
                     result.value *= 0x10;
                     result.value += ch - '0';
                 } else if (ch >= 'a' && ch <= 'f') {
-                    s.get();
+                    Get();
                     result.value *= 0x10;
                     result.value += ch - 'a' + 0xA;
                 } else if (ch >= 'A' && ch <= 'F') {
-                    s.get();
+                    Get();
                     result.value *= 0x10;
                     result.value += ch - 'A' + 0xA;
                 } else {
@@ -211,12 +231,12 @@ AsmToken::Numeric AsmLexer::LexNumeric() {
                 result.value *= -1;
             }
             return result;
-        } else if (s.peek() == 'b') {
-            s.get();
+        } else if (Peek() == 'b') {
+            Get();
             while (true) {
-                int ch = s.peek();
+                int ch = Peek();
                 if (ch >= '0' && ch <= '1') {
-                    s.get();
+                    Get();
                     result.value *= 0b10;
                     result.value += ch - '0';
                 } else {
@@ -231,9 +251,9 @@ AsmToken::Numeric AsmLexer::LexNumeric() {
     }
 
     while (true) {
-        int ch = s.peek();
+        int ch = Peek();
         if (ch >= '0' && ch <= '9') {
-            s.get();
+            Get();
             result.value *= 10;
             result.value += ch - '0';
         } else {
@@ -244,4 +264,13 @@ AsmToken::Numeric AsmLexer::LexNumeric() {
         result.value *= -1;
     }
     return result;
+}
+
+int AsmLexer::Peek() {
+    return s.peek();
+}
+
+int AsmLexer::Get() {
+    byte_position++;
+    return s.get();
 }
